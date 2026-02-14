@@ -1,0 +1,165 @@
+```python
+import sqlite3
+import hashlib
+
+DB_NAME = "admin_system.db"
+
+# -------------------------
+# Database Connection
+# -------------------------
+def connect():
+    return sqlite3.connect(DB_NAME)
+
+# -------------------------
+# Create Table
+# -------------------------
+def create_table():
+    conn = connect()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL,
+            role TEXT NOT NULL
+        )
+    """)
+
+    conn.commit()
+    conn.close()
+
+# -------------------------
+# Hash Password
+# -------------------------
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
+# -------------------------
+# Register User
+# -------------------------
+def register():
+    username = input("Enter username: ")
+    password = input("Enter password: ")
+    role = input("Enter role (admin/staff): ").lower()
+
+    if role not in ["admin", "staff"]:
+        print("❌ Invalid role.\n")
+        return
+
+    hashed = hash_password(password)
+
+    try:
+        conn = connect()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO users (username, password, role)
+            VALUES (?, ?, ?)
+        """, (username, hashed, role))
+
+        conn.commit()
+        conn.close()
+
+        print("✅ User registered successfully!\n")
+
+    except sqlite3.IntegrityError:
+        print("❌ Username already exists.\n")
+
+# -------------------------
+# Login System
+# -------------------------
+def login():
+    username = input("Username: ")
+    password = input("Password: ")
+
+    hashed = hash_password(password)
+
+    conn = connect()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT role FROM users
+        WHERE username = ? AND password = ?
+    """, (username, hashed))
+
+    result = cursor.fetchone()
+    conn.close()
+
+    if result:
+        role = result[0]
+        print(f"✅ Login successful! Role: {role}\n")
+        dashboard(role)
+    else:
+        print("❌ Invalid credentials\n")
+
+# -------------------------
+# Dashboard
+# -------------------------
+def dashboard(role):
+    while True:
+        print("====== Dashboard ======")
+        print("1. View System Info")
+        if role == "admin":
+            print("2. Delete User")
+        print("0. Logout")
+
+        choice = input("Choose: ")
+
+        if choice == "1":
+            print("📊 System running normally.\n")
+
+        elif choice == "2" and role == "admin":
+            delete_user()
+
+        elif choice == "0":
+            print("Logging out...\n")
+            break
+
+        else:
+            print("❌ Invalid option\n")
+
+# -------------------------
+# Delete User (Admin Only)
+# -------------------------
+def delete_user():
+    username = input("Enter username to delete: ")
+
+    conn = connect()
+    cursor = conn.cursor()
+
+    cursor.execute("DELETE FROM users WHERE username = ?", (username,))
+    conn.commit()
+    conn.close()
+
+    print("🗑️ User deleted (if existed).\n")
+
+# -------------------------
+# Main Menu
+# -------------------------
+def main():
+    create_table()
+
+    while True:
+        print("====== Admin Login System ======")
+        print("1. Register")
+        print("2. Login")
+        print("3. Exit")
+
+        choice = input("Choose: ")
+
+        if choice == "1":
+            register()
+        elif choice == "2":
+            login()
+        elif choice == "3":
+            print("Exiting...")
+            break
+        else:
+            print("❌ Invalid choice\n")
+
+if __name__ == "__main__":
+    main()
+```
+
+---
