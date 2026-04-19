@@ -76,7 +76,7 @@ try:
     print("System Started...")
     while True:
         if check_fire():
-            print("🔥 FIRE DETECTED 🔥")
+            print("FIRE DETECTED")
 
             deactivate_lift()
             speak_alert()
